@@ -57,6 +57,7 @@ wss.on('connection',function(ws){
 
     else if(msg.type==='join'){
       const r=rooms[msg.id];
+      console.log('[Join] id:',msg.id,'pass:',msg.pass,'roomPass:',r?r.pass:'N/A');
       if(!r){ws.send(JSON.stringify({type:'error',msg:'房间不存在'}));return}
       if(r.guest){ws.send(JSON.stringify({type:'error',msg:'房间已满'}));return}
       if(r.pass&&r.pass!==msg.pass){ws.send(JSON.stringify({type:'error',msg:'密码错误'}));return}

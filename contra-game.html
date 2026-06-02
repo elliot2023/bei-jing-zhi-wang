@@ -426,6 +426,7 @@ function renderRoomList(){
 }
 
 window._joinRoom=function(id,hasPass){
+  console.log('[JoinRoom] id:',id,'hasPass:',hasPass,typeof hasPass);
   if(hasPass){
     // Use inline password input instead of prompt()
     var statusEl=document.getElementById('connStatus');
@@ -463,10 +464,11 @@ function showCreateRoom(){
   document.getElementById('lblRemote').style.display='block';
   document.getElementById('lblRemote').textContent='房间名称：';
   document.getElementById('txtRemote').style.display='block';
-  document.getElementById('txtRemote').value='';
-  document.getElementById('txtRemote').placeholder=playerName+'的冒险（可自定义）';
+  document.getElementById('txtRemote').value=playerName+'的冒险';
+  document.getElementById('txtRemote').placeholder='输入房间名称';
   document.getElementById('txtRemote').rows=1;
   document.getElementById('txtRemote').style.height='36px';
+  document.getElementById('txtRemote').select();
   // Password field
   var lblP=document.getElementById('lblPass');var inpP=document.getElementById('roomPass');
   if(!lblP){
