@@ -7,12 +7,13 @@ const PORT=parseInt(process.env.PORT||process.argv[2])||8888;
 
 // HTTP server - serve game file
 const httpServer=http.createServer(function(req,res){
-  let file=req.url==='/'?'/contra-game.html':req.url;
+  let url=req.url.split('?')[0];
+  let file=url==='/'?'/contra-game.html':url;
   const fp=path.join(__dirname,file);
   const ext=path.extname(fp);
   const types={'.html':'text/html','.js':'application/javascript','.css':'text/css','.png':'image/png'};
   fs.readFile(fp,function(err,data){
-    if(err){res.writeHead(404);res.end('Not found');return}
+    if(err){console.log('[404]',fp,err.code);res.writeHead(404);res.end('Not found: '+file);return}
     res.writeHead(200,{'Content-Type':(types[ext]||'text/plain')+';charset=utf-8'});res.end(data);
   });
 });
