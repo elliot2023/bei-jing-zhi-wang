@@ -348,9 +348,11 @@ function connectSignaling(callback){
   var wsProto=loc.protocol==='https:'?'wss:':'ws:';
   var wsPort=loc.port||(loc.protocol==='https:'?'443':'80');
   var wsUrl=wsProto+'//'+loc.hostname+':'+wsPort;
-  try{sigWs=new WebSocket(wsUrl)}catch(e){document.getElementById('connStatus').textContent='无法连接服务器，请用 node server.js 启动';return}
-  sigWs.onopen=function(){if(callback)callback()};
-  sigWs.onclose=function(){console.log('Signaling disconnected')};
+  console.log('[WS] Connecting to',wsUrl);
+  try{sigWs=new WebSocket(wsUrl)}catch(e){document.getElementById('connStatus').textContent='无法连接服务器';return}
+  sigWs.onopen=function(){console.log('[WS] Connected');if(callback)callback()};
+  sigWs.onerror=function(e){console.error('[WS] Error',e);document.getElementById('connStatus').textContent='无法连接服务器，请检查网络'};
+  sigWs.onclose=function(e){console.log('[WS] Closed',e.code,e.reason);};
   sigWs.onmessage=function(e){
     var msg;try{msg=JSON.parse(e.data)}catch(ex){return}
     if(msg.type==='rooms'){roomList=msg.list;renderRoomList()}
