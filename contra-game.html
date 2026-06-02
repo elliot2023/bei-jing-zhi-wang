@@ -456,8 +456,10 @@ function showCreateRoom(){
   document.getElementById('lblRemote').style.display='block';
   document.getElementById('lblRemote').textContent='房间名称：';
   document.getElementById('txtRemote').style.display='block';
-  document.getElementById('txtRemote').value=playerName+'的冒险';
+  document.getElementById('txtRemote').value='';
+  document.getElementById('txtRemote').placeholder=playerName+'的冒险（可自定义）';
   document.getElementById('txtRemote').rows=1;
+  document.getElementById('txtRemote').style.height='36px';
   // Password field
   var lblP=document.getElementById('lblPass');var inpP=document.getElementById('roomPass');
   if(!lblP){
