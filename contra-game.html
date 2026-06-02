@@ -528,11 +528,14 @@ var RTC_CFG={iceServers:[
   {urls:'stun:stun.qq.com:3478'}
 ]};
 var sdpSent=false;
+var pendingCands=[];
 
 function createHost(){
   console.log('[Host] Creating RTCPeerConnection...');
   sdpSent=false;
   peerConn=new RTCPeerConnection(RTC_CFG);
+  peerConn.onconnectionstatechange=function(){console.log('[Host] Connection state:',peerConn.connectionState)};
+  peerConn.oniceconnectionstatechange=function(){console.log('[Host] ICE state:',peerConn.iceConnectionState)};
   dataChannel=peerConn.createDataChannel('game',{ordered:false});
   setupChannel(dataChannel);
   // Trickle ICE: send each candidate as it arrives
@@ -558,6 +561,8 @@ function createHost(){
 function prepareGuestPeer(){
   if(peerConn)return;
   peerConn=new RTCPeerConnection(RTC_CFG);
+  peerConn.onconnectionstatechange=function(){console.log('[Guest] Connection state:',peerConn.connectionState)};
+  peerConn.oniceconnectionstatechange=function(){console.log('[Guest] ICE state:',peerConn.iceConnectionState)};
   peerConn.ondatachannel=function(e){setupChannel(e.channel)};
   peerConn.onicecandidate=function(e){
     if(e.candidate){
@@ -575,6 +580,11 @@ function handleOffer(offer){
   sdpSent=false;
   peerConn.setRemoteDescription(new RTCSessionDescription(offer)).then(function(){
     console.log('[Guest] Remote desc set, creating answer...');
+    // Flush pending candidates
+    for(var i=0;i<pendingCands.length;i++){
+      peerConn.addIceCandidate(new RTCIceCandidate(pendingCands[i])).catch(function(e){console.warn('[ICE] addCandidate error:',e)});
+    }
+    pendingCands=[];
     return peerConn.createAnswer()}).then(function(d){
     console.log('[Guest] Answer created, setting local desc...');
     return peerConn.setLocalDescription(d)}).then(function(){
@@ -590,9 +600,22 @@ function sendSignal(desc){
 function onSignal(data){
   console.log('[Signal] Received:',data.type);
   if(data.type==='offer'){handleOffer(data)}
-  else if(data.type==='answer'){if(peerConn)peerConn.setRemoteDescription(new RTCSessionDescription(data))}
+  else if(data.type==='answer'){
+    if(peerConn)peerConn.setRemoteDescription(new RTCSessionDescription(data)).then(function(){
+      // Flush pending candidates
+      for(var i=0;i<pendingCands.length;i++){
+        peerConn.addIceCandidate(new RTCIceCandidate(pendingCands[i])).catch(function(e){console.warn('[ICE] addCandidate error:',e)});
+      }
+      pendingCands=[];
+    });
+  }
   else if(data.type==='candidate'&&data.candidate){
-    if(peerConn){peerConn.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(function(e){console.warn('[ICE] addCandidate error:',e)})}
+    if(peerConn&&peerConn.remoteDescription&&peerConn.remoteDescription.type){
+      peerConn.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(function(e){console.warn('[ICE] addCandidate error:',e)});
+    }else{
+      console.log('[ICE] Queuing candidate (no remote desc yet)');
+      pendingCands.push(data.candidate);
+    }
   }
 }
 
