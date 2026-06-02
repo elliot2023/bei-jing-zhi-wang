@@ -2577,7 +2577,12 @@ function loop(){
   if(!gameOn){requestAnimationFrame(loop);return}
   try{if(hitStop>0){hitStop--;requestAnimationFrame(loop);return}
     if(netMode==='host'){update();draw();sendState()}
-    else if(netMode==='guest'){sendInput();draw()}
+    else if(netMode==='guest'){
+      sendInput();
+      // Apply local input to guest's own player for responsiveness
+      if(players.length>1){var gi={lt:!!keys.ArrowLeft,rt:!!keys.ArrowRight,up:!!keys.ArrowUp,dn:!!keys.ArrowDown,jmp:false,shoot:!!keys.KeyL,grn:!!keys.Semicolon,sw:!!keys.Slash};players[1].applyInput(gi)}
+      draw();
+    }
     else{update();draw()}
   }catch(e){console.error(e)}
   requestAnimationFrame(loop);
@@ -2617,8 +2622,6 @@ function applyGameState(d){
     while(players.length>d.p.length)players.pop();
     for(var i=0;i<d.p.length;i++){
       var pd=d.p[i],p=players[i];
-      // Guest: skip updating our own player (index 1), use local position
-      if(netMode==='guest'&&i===1)continue;
       p.x=pd[0];p.y=pd[1];p.hp=pd[2];p.facing=pd[3];p.wpIdx=pd[4];p.stars=pd[5];
       p.inv=pd[7];p.shield=pd[8];p.grenadeCd=pd[9];
     }
