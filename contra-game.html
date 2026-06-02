@@ -2583,6 +2583,8 @@ function loop(){
       sendInput();
       // Apply local input to guest's own player for responsiveness
       if(players.length>1){var gi={lt:!!keys.ArrowLeft,rt:!!keys.ArrowRight,up:!!keys.ArrowUp,dn:!!keys.ArrowDown,jmp:false,shoot:!!keys.KeyL,grn:!!keys.Semicolon,sw:!!keys.Slash};players[1].applyInput(gi)}
+      // Camera follow guest's own player
+      if(players.length>1){var gp=players[1];var gx=gp.x+gp.w/2-W/2;var gy=gp.y+gp.h/2-H/2;camX+=(gx-camX)*.1;camY+=(gy-camY)*.1;camX=Math.max(0,Math.min(MAP_W-W,camX));camY=Math.max(0,Math.min(MAP_H-H,camY))}
       draw();
     }
     else{update();draw()}
