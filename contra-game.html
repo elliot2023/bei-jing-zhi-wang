@@ -645,7 +645,7 @@ function startNetworkGame(){
   playerName=document.getElementById('playerName').value.trim()||'北北';
   twoPlayerMode=true;initGame();
   players[0].pName=playerName;
-  players.push(new Player(1,'red'));
+  if(netMode==='guest'&&players.length>1)players[1].pName=playerName;
   showBanner();playBGM();
   if(!loopRunning){loopRunning=true;loop()}
 }
@@ -2617,6 +2617,8 @@ function applyGameState(d){
     while(players.length>d.p.length)players.pop();
     for(var i=0;i<d.p.length;i++){
       var pd=d.p[i],p=players[i];
+      // Guest: skip updating our own player (index 1), use local position
+      if(netMode==='guest'&&i===1)continue;
       p.x=pd[0];p.y=pd[1];p.hp=pd[2];p.facing=pd[3];p.wpIdx=pd[4];p.stars=pd[5];
       p.inv=pd[7];p.shield=pd[8];p.grenadeCd=pd[9];
     }
@@ -2675,7 +2677,7 @@ function update(){
 
   bgOff+=.4;
   // Camera follow player (smooth)
-  var pc=players[0];
+  var pc=netMode==='guest'&&players.length>1?players[1]:players[0];
   var tcx=pc.x+pc.w/2-W/2;
   var tcy=pc.y+pc.h/2-H/2;
   camX+=(tcx-camX)*.1;camY+=(tcy-camY)*.1;
