@@ -427,12 +427,19 @@ function renderRoomList(){
 
 window._joinRoom=function(id,hasPass){
   if(hasPass){
-    var pass=prompt('请输入房间密码：');
-    if(pass===null)return;
-    doJoinRoom(id,pass);
+    // Use inline password input instead of prompt()
+    var statusEl=document.getElementById('connStatus');
+    var oldHtml=statusEl.innerHTML;
+    statusEl.innerHTML='<span style="color:#ffcc00">请输入密码：</span> <input id="_joinPassInput" type="text" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 8px;font-size:13px;width:120px"> <button onclick="window._confirmJoin(\''+id+'\')" style="background:#ff88cc;color:#fff;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px">确定</button> <button onclick="document.getElementById(\'connStatus\').innerHTML=\'\';document.getElementById(\'_joinPassInput\')&&document.getElementById(\'_joinPassInput\').remove()" style="background:#666;color:#fff;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px">取消</button>';
+    setTimeout(function(){var inp=document.getElementById('_joinPassInput');if(inp)inp.focus()},100);
   }else{
     doJoinRoom(id,'');
   }
+};
+window._confirmJoin=function(id){
+  var inp=document.getElementById('_joinPassInput');
+  var pass=inp?inp.value:'';
+  doJoinRoom(id,pass);
 };
 
 function doJoinRoom(id,pass){
