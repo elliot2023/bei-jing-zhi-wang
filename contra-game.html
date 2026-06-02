@@ -455,7 +455,7 @@ document.getElementById('btnConnBack').addEventListener('click',function(){
   cleanupConn();
 });
 
-document.getElementById('btnCreate').addEventListener('click',function(){showCreateRoom()});
+document.getElementById('btnCreate').onclick=function(){showCreateRoom()};
 
 function showCreateRoom(){
   hideConnFields();
