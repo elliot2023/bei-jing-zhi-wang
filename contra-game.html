@@ -643,7 +643,7 @@ function setupChannel(ch){
   ch.onerror=function(e){console.log('[Channel] Error',e);document.getElementById('connStatus').textContent='连接错误'};
   ch.onmessage=function(e){
     try{var msg=JSON.parse(e.data);
-      if(netMode==='guest'&&msg.type==='state')applyGameState(msg.d);
+      if(netMode==='guest'&&msg.type==='state'){window._guestPendingState=msg.d;}
       if(netMode==='host'&&msg.type==='input')guestInput=msg.d;
     }catch(ex){}
   };
@@ -2465,6 +2465,7 @@ function initGame(){
   if(continueTimer){clearInterval(continueTimer);continueTimer=null}
   // pet.x=MAP_W/2-30;pet.y=MAP_H/2;pet.shootCd=0; // 宠物已移除
   guestInput={};
+  window._guestPendingState=null;
 }
 
 // Story dialog system
@@ -2604,9 +2605,9 @@ function loop(){
     if(netMode==='host'){update();draw();sendState()}
     else if(netMode==='guest'){
       sendInput();
-      // Apply local input to guest's own player for responsiveness
-      if(players.length>1){var gi={lt:!!keys.ArrowLeft,rt:!!keys.ArrowRight,up:!!keys.ArrowUp,dn:!!keys.ArrowDown,jmp:false,shoot:!!keys.KeyL,grn:!!keys.Semicolon,sw:!!keys.Slash};players[1].applyInput(gi)}
-      // Camera follow guest's own player
+      // Apply host's authoritative state (includes guest input processed by host)
+      if(window._guestPendingState){applyGameState(window._guestPendingState);window._guestPendingState=null}
+      // Camera follow guest's own player (player[1])
       if(players.length>1){var gp=players[1];var gx=gp.x+gp.w/2-W/2;var gy=gp.y+gp.h/2-H/2;camX+=(gx-camX)*.1;camY+=(gy-camY)*.1;camX=Math.max(0,Math.min(MAP_W-W,camX));camY=Math.max(0,Math.min(MAP_H-H,camY))}
       draw();
     }
