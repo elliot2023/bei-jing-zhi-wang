@@ -50,6 +50,17 @@ wss.on('connection',function(ws){
       const id=''+(nextId++);
       rooms[id]={name:msg.name||('房间'+id),pass:msg.pass||'',host:ws,hostName:msg.playerName||'主机',guest:null,guestName:''};
       ws.roomId=id;ws.role='host';
+      // Auto-destroy room after 3 minutes if no one joins
+      rooms[id]._expireTimer=setTimeout(function(){
+        const r=rooms[id];
+        if(r&&!r.guest){
+          console.log('Room '+id+' expired (3min timeout)');
+          if(r.host&&r.host.readyState===WebSocket.OPEN)
+            r.host.send(JSON.stringify({type:'error',msg:'房间等待超时，已自动销毁'}));
+          delete rooms[id];
+          broadcastRoomList();
+        }
+      },180000);
       ws.send(JSON.stringify({type:'created',id:id}));
       broadcastRoomList();
       console.log('Room created: '+id+' by '+msg.playerName);
@@ -61,6 +72,8 @@ wss.on('connection',function(ws){
       if(!r){ws.send(JSON.stringify({type:'error',msg:'房间不存在'}));return}
       if(r.guest){ws.send(JSON.stringify({type:'error',msg:'房间已满'}));return}
       if(r.pass&&r.pass!==msg.pass){ws.send(JSON.stringify({type:'error',msg:'密码错误'}));return}
+      // Cancel auto-expire timer since someone joined
+      if(r._expireTimer){clearTimeout(r._expireTimer);r._expireTimer=null}
       r.guest=ws;r.guestName=msg.playerName||'客人';
       ws.roomId=msg.id;ws.role='guest';
       ws.send(JSON.stringify({type:'joined',hostName:r.hostName}));
@@ -92,15 +105,16 @@ wss.on('connection',function(ws){
     const id=ws.roomId;
     if(!id||!rooms[id])return;
     const r=rooms[id];
+    // Cancel expire timer
+    if(r._expireTimer){clearTimeout(r._expireTimer);r._expireTimer=null}
     if(ws.role==='host'){
       if(r.guest&&r.guest.readyState===WebSocket.OPEN)r.guest.send(JSON.stringify({type:'hostLeft'}));
-      delete rooms[id];
     }else{
-      r.guest=null;r.guestName='';
       if(r.host&&r.host.readyState===WebSocket.OPEN)r.host.send(JSON.stringify({type:'guestLeft'}));
     }
+    delete rooms[id];
     broadcastRoomList();
-    console.log('Room '+id+' updated (disconnect)');
+    console.log('Room '+id+' destroyed (player left)');
   });
 });
 
