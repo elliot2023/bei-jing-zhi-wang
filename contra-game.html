@@ -776,15 +776,15 @@ var WEAPONS=[
 //  LEVEL CONFIGS
 // ====================================================================
 var LEVELS=[
-  {name:'糖果乐园',bg:'candy',eSpd:1.2,spawn:600,maxE:15,toKill:18,bSpd:9,bossHP:40,
+  {name:'糖果乐园',bg:'candy',eSpd:1.2,spawn:800,maxE:10,toKill:12,bSpd:9,bossHP:40,
    intro:'糖果乐园的居民被黑暗力量控制了，{n}必须解救他们！',bossLine:'嘿嘿，来尝尝我的毒糖果吧！',clearLine:'糖果乐园恢复了和平！居民们得救了！'},
-  {name:'海底世界',bg:'ocean',eSpd:1.4,spawn:500,maxE:18,toKill:22,bSpd:10,bossHP:60,
+  {name:'海底世界',bg:'ocean',eSpd:1.4,spawn:700,maxE:12,toKill:15,bSpd:10,bossHP:60,
    intro:'海底的守护兽发狂了，{n}要潜入深渊平息混乱！',bossLine:'这片海域是我的领地！',clearLine:'深海恢复了宁静，海族们感谢你！'},
-  {name:'玩具城堡',bg:'toy',eSpd:1.7,spawn:450,maxE:20,toKill:26,bSpd:10,bossHP:80,
+  {name:'玩具城堡',bg:'toy',eSpd:1.7,spawn:650,maxE:14,toKill:18,bSpd:10,bossHP:80,
    intro:'玩具城堡的玩具们被施了魔法，{n}快来解救他们！',bossLine:'你只是个玩具而已！',clearLine:'玩具们重获自由，城堡恢复了欢笑！'},
-  {name:'太空冒险',bg:'space',eSpd:2.0,spawn:400,maxE:22,toKill:30,bSpd:11,bossHP:100,
+  {name:'太空冒险',bg:'space',eSpd:2.0,spawn:600,maxE:16,toKill:20,bSpd:11,bossHP:100,
    intro:'太空站的能源核心被夺走了，{n}必须夺回来！',bossLine:'宇宙的力量不是你能抗衡的！',clearLine:'太空站的能源恢复了，星际航线再次畅通！'},
-  {name:'彩虹之巅',bg:'rainbow',eSpd:2.3,spawn:350,maxE:25,toKill:35,bSpd:12,bossHP:130,
+  {name:'彩虹之巅',bg:'rainbow',eSpd:2.3,spawn:550,maxE:18,toKill:24,bSpd:12,bossHP:130,
    intro:'黑暗之王就在彩虹之巅，{n}，最终决战开始了！',bossLine:'你不可能打败我！这里将是你的终点！',clearLine:'黑暗被驱散了！{n}成为了真正的北境之王！'}
 ];
 
@@ -924,7 +924,7 @@ Collect.prototype.draw=function(){
   var x=this.x,y=this.y,bob=Math.sin(this.af*.08)*3;
   ctx.save();ctx.translate(x+10,y+10+bob);
   // Glow beneath
-  var glowC=this.type==='star'?'#ffcc00':this.type==='candy'?'#ff4488':'#88ff88';
+  var glowC=this.type==='star'?'#ffcc00':this.type==='candy'?'#ff4488':this.type==='medkit'?'#66ff66':'#88ff88';
   ctx.globalAlpha=.12+Math.sin(this.af*.1)*.08;ctx.fillStyle=glowC;
   ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
   if(this.type==='star'){
@@ -948,6 +948,12 @@ Collect.prototype.draw=function(){
     // Stripe
     ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(0,0,6,.3,2.3);ctx.stroke();
+  }else if(this.type==='medkit'){
+    // Medkit — white box with red cross
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(-9,-9,18,18,4);ctx.fill();
+    ctx.strokeStyle='rgba(200,200,200,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(-9,-9,18,18,4);ctx.stroke();
+    ctx.fillStyle='#ff3344';ctx.fillRect(-2,-6,4,12);ctx.fillRect(-6,-2,12,4);
+    ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(-3,-4,2.5,0,Math.PI*2);ctx.fill();
   }else{
     // Gift box (rounded, cuter)
     var gG=ctx.createLinearGradient(-9,-9,9,9);
@@ -2418,6 +2424,7 @@ function killEnemy(e,idx){
   if(Math.random()<.3)collectibles.push(new Collect(e.x,e.y,'star'));
   else if(Math.random()<.25)collectibles.push(new Collect(e.x,e.y,'candy'));
   else if(Math.random()<.12)collectibles.push(new Collect(e.x,e.y,'gift'));
+  if(Math.random()<.08)collectibles.push(new Collect(e.x,e.y,'medkit'));
   if(Math.random()<.12)powerups.push(new Powerup(e.x,e.y,'upgrade'));
   if(Math.random()<.35)floatTxt(e.x+10,e.y-40,cheer(),'#88ffcc',13);
   if(idx!==undefined)enemies.splice(idx,1);
@@ -2783,6 +2790,8 @@ function update(){
         confetti(boss?boss.x+35:MAP_W/2,boss?boss.y+35:MAP_H/2,60);
         boom(MAP_W/2,MAP_H/2,'#ffcc00',20,{shape:'star',spd:8,sz:8,life:35,vy:-3,rotSpd:.3});
         boom(MAP_W/2,MAP_H/2,'#fff',12,{shape:'ring',spd:5,sz:14,life:25,vy:0});
+        collectibles.push(new Collect(MAP_W/2-20,MAP_H/2-20,'medkit'));
+        collectibles.push(new Collect(MAP_W/2+20,MAP_H/2-20,'medkit'));
         floatTxt(MAP_W/2-60,MAP_H/2,'太棒了'+(playerName||'北北')+'！+200','#ffcc00',22);shakeAmt=12;screenFlash=10;
         if(killed>=lc.toKill){var clearMsg=lc.clearLine.replace(/\{n\}/g,playerName||'北北');
         setTimeout(function(){showStory(clearMsg,'clear-line',nextLvl)},1200)}}
@@ -2805,6 +2814,7 @@ function update(){
         c.alive=false;boom(c.x+10,c.y+10,'#ffffff',8);
         if(c.type==='star'){players[p].stars++;score+=5;snd('star');floatTxt(c.x,c.y,'★ '+players[p].stars+'/10','#ffcc00');if(players[p].stars>=10){players[p].stars=0;players[p].hp=Math.min(players[p].hp+1,99);floatTxt(c.x,c.y-20,'+1 命！','#ff4444',18);snd('life');showBadge('collector','收集控！')}}
         else if(c.type==='candy'){score+=50;snd('candy');floatTxt(c.x,c.y,'+50 糖果！','#ff4488')}
+        else if(c.type==='medkit'){players[p].hp=Math.min(players[p].hp+2,99);snd('life');floatTxt(c.x,c.y,'+❤️ 回血！','#ff4466',18)}
         else{var gr=Math.random();if(gr<.33){players[p].hp=Math.min(players[p].hp+3,99);floatTxt(c.x,c.y,'满血！','#ff4444',18);snd('life')}
           else if(gr<.66){players[p].shield=300;floatTxt(c.x,c.y,'护盾5秒！','#88ccff',16);snd('upgrade')}
           else{for(var k=0;k<enemies.length;k++)boom(enemies[k].x+14,enemies[k].y+14,'#ffcc00',10);enemies=[];floatTxt(c.x,c.y,'全屏清怪！','#ffcc00',18);shakeAmt=8;snd('boss')}}
