@@ -632,6 +632,7 @@ function onSignal(data){
 }
 
 function setupChannel(ch){
+  dataChannel=ch;
   ch.onopen=function(){
     console.log('[Channel] Open! netMode='+netMode);
     document.getElementById('connStatus').textContent='✅ 连接成功！';
@@ -2685,8 +2686,11 @@ function applyGameState(d){
 
 function sendInput(){
   var inp={
-    lt:!!keys.ArrowLeft,rt:!!keys.ArrowRight,up:!!keys.ArrowUp,dn:!!keys.ArrowDown,
-    jmp:false,shoot:!!keys.KeyL,grn:!!keys.Semicolon,sw:!!keys.Slash
+    lt:!!keys.ArrowLeft||!!keys.KeyA,
+    rt:!!keys.ArrowRight||!!keys.KeyD,
+    up:!!keys.ArrowUp||!!keys.KeyW,
+    dn:!!keys.ArrowDown||!!keys.KeyS,
+    jmp:!!keys.Space,shoot:!!keys.KeyL||!!keys.KeyJ,grn:!!keys.Semicolon||!!keys.KeyK,sw:!!keys.Slash||!!keys.KeyQ
   };
   sendMsg({type:'input',d:inp});
 }
@@ -3138,11 +3142,16 @@ document.getElementById('btnRestart').style.display='flex';
         (document.exitFullscreen||document.webkitExitFullscreen).call(document);
       }
       wrapEl.classList.remove('fs-mode');
+      if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock();
     }else{
       var el=document.documentElement;
       var rfs=el.requestFullscreen||el.webkitRequestFullscreen;
       if(rfs){try{rfs.call(el)}catch(ex){wrapEl.classList.add('fs-mode')} }
       else{wrapEl.classList.add('fs-mode')}
+      // Lock to landscape on mobile
+      if(screen.orientation&&screen.orientation.lock){
+        screen.orientation.lock('landscape').catch(function(){});
+      }
     }
     setTimeout(resizeCanvas,200);
   }
@@ -3173,13 +3182,20 @@ document.getElementById('btnRestart').addEventListener('click',function(e){
 // Canvas responsive scaling
 function resizeCanvas(){
   var ww=window.innerWidth,wh=window.innerHeight;
-  var scale=Math.min(ww/900,wh/500);
-  if(scale<1||isMobile){
-    if(scale>1)scale=1;
-    canvas.style.width=Math.floor(900*scale)+'px';
-    canvas.style.height=Math.floor(500*scale)+'px';
+  var isFullscreen=!!(document.fullscreenElement||document.webkitFullscreenElement);
+  if(isFullscreen&&isMobile){
+    // In fullscreen landscape: fill the screen
+    canvas.style.width=ww+'px';
+    canvas.style.height=wh+'px';
   }else{
-    canvas.style.width='';canvas.style.height='';
+    var scale=Math.min(ww/900,wh/500);
+    if(scale<1||isMobile){
+      if(scale>1)scale=1;
+      canvas.style.width=Math.floor(900*scale)+'px';
+      canvas.style.height=Math.floor(500*scale)+'px';
+    }else{
+      canvas.style.width='';canvas.style.height='';
+    }
   }
   var wrap=document.getElementById('wrap');
   wrap.style.width=canvas.offsetWidth+'px';
