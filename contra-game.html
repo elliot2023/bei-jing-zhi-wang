@@ -719,6 +719,7 @@ function snd(type){
   else if(type==='victory'){o.type='square';[523,659,784,1047,784,1047,1319,1568].forEach(function(f,i){o.frequency.setValueAtTime(f,t+i*.12)});g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.8);o.start(t);o.stop(t+.85)}
   else if(type==='die'){o.type='triangle';[400,300,200,150].forEach(function(f,i){o.frequency.setValueAtTime(f,t+i*.12)});g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.start(t);o.stop(t+.55)}
   else if(type==='switch'){o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.setValueAtTime(900,t+.05);g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);o.start(t);o.stop(t+.12)}
+  else if(type==='shimmer'){o.type='sine';o.frequency.setValueAtTime(1200+Math.random()*400,t);o.frequency.setValueAtTime(1800+Math.random()*300,t+.08);g.gain.setValueAtTime(.04,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);o.start(t);o.stop(t+.12)}
   }catch(e){}
 }
 
@@ -760,7 +761,11 @@ document.addEventListener('keyup',function(e){keys[e.code]=false});
 // ====================================================================
 var WEAPONS=[
   {name:'手枪',icon:'🔫',color:'#33ff66',cd:14,spd:9,snd:'shoot',
-   fire:function(bx,by,ang,bs){bullets.push(new Bullet(bx,by,Math.cos(ang)*bs,Math.sin(ang)*bs))}},
+   fire:function(bx,by,ang,bs){
+     var perpX=Math.cos(ang+Math.PI/2)*5,perpY=Math.sin(ang+Math.PI/2)*5;
+     var cx=Math.cos(ang)*bs,cy=Math.sin(ang)*bs;
+     bullets.push(new Bullet(bx+perpX,by+perpY,cx,cy));
+     bullets.push(new Bullet(bx-perpX,by-perpY,cx,cy))}},
   {name:'霰弹',icon:'💥',color:'#ff8844',cd:22,spd:9,snd:'shotgun',
    fire:function(bx,by,ang,bs){
      for(var i=-2;i<=2;i++){var a2=ang+i*0.15;bullets.push(new Bullet(bx,by,Math.cos(a2)*bs,Math.sin(a2)*bs))}}},
@@ -1888,15 +1893,46 @@ Player.prototype.draw=function(){
     ctx.fillStyle='rgba(255,255,200,.4)';ctx.beginPath();ctx.arc(24,0,3,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
-  // Invincibility sparkles
+  // Invincibility effects — 声光电
   if(this.inv>0){
-    ctx.globalAlpha=.3+Math.sin(this.inv*.4)*.2;
-    ctx.fillStyle='rgba(255,100,150,.3)';ctx.beginPath();ctx.arc(cx,cy,22,0,Math.PI*2);ctx.fill();
+    // 光: rotating light ring
+    var ringR=24+Math.sin(this.inv*.15)*4;
+    ctx.shadowColor='#ff88cc';ctx.shadowBlur=20;
+    ctx.strokeStyle='rgba(255,136,204,.4)';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.arc(cx,cy,ringR,af*.08,af*.08+2.5);ctx.stroke();
+    ctx.strokeStyle='rgba(255,200,100,.25)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(cx,cy,ringR+4,af*.08+3,af*.08+5.5);ctx.stroke();
+    ctx.shadowBlur=0;
+    // 光: pulsing core glow
+    var pulseA=.15+Math.sin(this.inv*.25)*.1;
+    ctx.globalAlpha=pulseA;
+    var glowG=ctx.createRadialGradient(cx,cy,5,cx,cy,28);
+    glowG.addColorStop(0,'#fff');glowG.addColorStop(.3,'rgba(255,200,100,.6)');glowG.addColorStop(1,'rgba(255,136,204,0)');
+    ctx.fillStyle=glowG;ctx.beginPath();ctx.arc(cx,cy,28,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+    // 电: electric arcs
+    for(var ei=0;ei<2;ei++){
+      var eAng=Math.random()*Math.PI*2;
+      var eDist=18+Math.random()*12;
+      var eLen=6+Math.random()*10;
+      var ex1=cx+Math.cos(eAng)*eDist,ey1=cy+Math.sin(eAng)*eDist;
+      var ex2=ex1+Math.cos(eAng+Math.random()*.8-.4)*eLen,ey2=ey1+Math.sin(eAng+Math.random()*.8-.4)*eLen;
+      var ex3=ex2+Math.cos(eAng+Math.random()*.6-.3)*eLen*.7,ey3=ey2+Math.sin(eAng+Math.random()*.6-.3)*eLen*.7;
+      ctx.strokeStyle='rgba(200,230,255,'+(.3+Math.random()*.4)+')';ctx.lineWidth=1.5+Math.random()*1.5;
+      ctx.shadowColor='#88ddff';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(ex1,ey1);ctx.lineTo(ex2,ey2);ctx.lineTo(ex3,ey3);ctx.stroke();
+      // Branch
+      var ebx=ex2+Math.cos(eAng+1.2)*eLen*.4,eby=ey2+Math.sin(eAng+1.2)*eLen*.4;
+      ctx.lineWidth=1;ctx.strokeStyle='rgba(180,220,255,.2)';
+      ctx.beginPath();ctx.moveTo(ex2,ey2);ctx.lineTo(ebx,eby);ctx.stroke();
+    }
+    ctx.shadowBlur=0;
     // Sparkle stars around character
-    for(var si=0;si<3;si++){
-      var sa=af*.1+si*Math.PI*2/3;var sr=22+Math.sin(af*.15+si)*3;
-      ctx.fillStyle='rgba(255,255,200,.6)';
-      ctx.beginPath();ctx.arc(cx+Math.cos(sa)*sr,cy+Math.sin(sa)*sr,2,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.5+Math.sin(this.inv*.5)*.3;
+    for(var si=0;si<4;si++){
+      var sa=af*.12+si*Math.PI*2/4;var sr=26+Math.sin(af*.2+si)*5;
+      ctx.fillStyle=si%2===0?'#ffcc00':'#88ddff';
+      ctx.beginPath();ctx.arc(cx+Math.cos(sa)*sr,cy+Math.sin(sa)*sr,1.5+Math.sin(af*.3+si),0,Math.PI*2);ctx.fill();
     }
     ctx.globalAlpha=1;
   }
@@ -2398,7 +2434,7 @@ Powerup.prototype.draw=function(){
 // ====================================================================
 var players=[],score,level,lc,spawnT,killed,totalKilled=0;
 var gameOn=false,gameEnd=false,combo,comboTimer;
-var hitStop=0,screenFlash=0,shakeAmt=0,loopRunning=false;
+var hitStop=0,screenFlash=0,shakeAmt=0,loopRunning=false,invSndTimer=0;
 var continueTimer=null,continueActive=false;
 var twoPlayerMode=false;
 
@@ -2716,6 +2752,10 @@ function update(){
     players[1].applyInput(p2inp);
   }
   if(netMode==='host'&&guestInput)applyGuestInput(guestInput);
+
+  // Invincibility shimmer sound
+  invSndTimer--;
+  if(invSndTimer<=0){var _hasInv=false;for(var _pi=0;_pi<players.length;_pi++){if(players[_pi].inv>0){_hasInv=true;break}}if(_hasInv){snd('shimmer');invSndTimer=12}else{invSndTimer=0}}
 
   bgOff+=.4;
   // Camera follow player (smooth)
